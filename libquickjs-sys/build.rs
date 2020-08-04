@@ -55,6 +55,18 @@ fn main() {
     println!("cargo:rustc-link-lib=static={}", LIB_NAME);
 }
 
+fn create_builder_with_defines() -> cc::Build {
+    let mut builder = cc::Build::new();
+
+    #[cfg(feature = "dump_leaks")]
+    builder.define("DUMP_LEAKS", None);
+
+    #[cfg(feature = "bignum")]
+    builder.define("CONFIG_BIGNUM", None);
+
+    builder
+}
+
 #[cfg(feature = "bundled")]
 fn main() {
     let embed_path = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("embed");
@@ -73,7 +85,7 @@ fn main() {
     eprintln!("Compiling quickjs...");
     let quickjs_version =
         std::fs::read_to_string(code_dir.join("VERSION")).expect("failed to read quickjs version");
-    cc::Build::new()
+    create_builder_with_defines()
         .files(
             [
                 "cutils.c",
@@ -90,7 +102,6 @@ fn main() {
             "CONFIG_VERSION",
             format!("\"{}\"", quickjs_version.trim()).as_str(),
         )
-        .define("CONFIG_BIGNUM", None)
         // The below flags are used by the official Makefile.
         .flag_if_supported("-Wchar-subscripts")
         .flag_if_supported("-Wno-array-bounds")
